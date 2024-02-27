@@ -11,9 +11,9 @@ const secretKey =
 
 const db = mysql2.createPool({
   host: "sql.freedb.tech",
-  user: "freedb_jhovan",
-  password: "d$?DbcebWzD9Adv",
-  database: "thesis2_db",
+  user: "freedb_hueco",
+  password: "?WmvH3c$&E8TsUZ",
+  database: "ThesisDB",
 });
 
 app.use(cors());
