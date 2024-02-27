@@ -10,10 +10,10 @@ const secretKey =
   process.env.SECRET_KEY || "gV2$r9^uLpQw3ZtYxYzA#dG!kLmNp3s6v9y/B?E";
 
 const db = mysql2.createPool({
-  host: "sql.freedb.tech",
-  user: "freedb_jhovan",
-  password: "d$?DbcebWzD9Adv",
-  database: "freedb_ThesisDB",
+  host: "localhost",
+  user: "root",
+  password: "01.God_is_Able",
+  database: "thesis2_db",
 });
 
 app.use(cors());
@@ -544,51 +544,85 @@ app.get("/api/wordDataHard", (req, res) => {
 // Fetching Database Stored Words End //
 
 // FETCH ID AND TITLE FROM STORIES TABLE START //
-app.get("/get-stories", (req, res) => {
-  db.query("SELECT stories_id, title FROM stories_table", (err, results) => {
-    if (err) {
-      console.error("Error fetching stories:", err);
-      return res
-        .status(500)
-        .json({ error: "Internal Server Error", message: err.message });
-    }
+app.get("/get-stories", verifyToken, (req, res) => {
+  const userId = req.userId; // Fetching user ID from the token
 
-    res.status(200).json(results);
-  });
-});
-// FETCH ID AND TITLE FROM STORIES TABLE END //
-
-// ADD STORY AND WORDS TO DATABASE START //
-app.post("/submit-story", (req, res) => {
-  const { title, content, addedWords } = req.body;
+  console.log("Fetching stories for UserID:", userId); // Log the user ID for debugging
 
   db.query(
-    "INSERT INTO stories_table (title, content) VALUES (?, ?)",
-    [title, content],
+    "SELECT stories_id, title FROM stories_table WHERE UserID = ?",
+    [userId],
     (err, results) => {
       if (err) {
-        console.error("Error inserting story:", err);
-        return res.status(500).json({ message: "Internal Server Error" });
+        console.error("Error fetching stories:", err);
+        return res
+          .status(500)
+          .json({ error: "Internal Server Error", message: err.message });
       }
 
-      const storyId = results.insertId;
+      console.log("Fetched stories:", results); // Log the fetched stories for debugging
 
-      const proWords = addedWords.map((word) => [word, storyId]);
-      db.query(
-        "INSERT INTO pro_table (word, stories_id) VALUES ?",
-        [proWords],
-        (err) => {
-          if (err) {
-            console.error("Error inserting words:", err);
-            return res.status(500).json({ message: "Internal Server Error" });
-          }
-
-          res.status(201).json({ message: "Story submitted successfully." });
-        }
-      );
+      res.status(200).json(results);
     }
   );
 });
+
+// FETCH ID AND TITLE FROM STORIES TABLE END //
+
+// ADD STORY AND WORDS TO DATABASE START //
+app.post("/submit-story", verifyToken, (req, res) => {
+  const { title, content, addedWords } = req.body;
+
+  const userId = req.userId;
+
+  console.log("User ID:", userId);
+
+  const getUserIdQuery = "SELECT UserID FROM user_account WHERE UserID = ?";
+
+  db.query(getUserIdQuery, [userId], (error, results) => {
+    if (error) {
+      console.error("Database error:", error);
+      return res.status(500).json({ error: "Internal server error." });
+    }
+
+    if (results.length === 1) {
+      db.query(
+        "INSERT INTO stories_table (title, content, UserID) VALUES (?, ?, ?)",
+        [title, content, userId],
+        (err, results) => {
+          if (err) {
+            console.error("Error inserting story:", err);
+            return res.status(500).json({ message: "Internal Server Error" });
+          }
+
+          const storyId = results.insertId;
+
+          const proWords = addedWords.map((word) => [word, storyId]);
+          db.query(
+            "INSERT INTO pro_table (word, stories_id) VALUES ?",
+            [proWords],
+            (err) => {
+              if (err) {
+                console.error("Error inserting words:", err);
+                return res
+                  .status(500)
+                  .json({ message: "Internal Server Error" });
+              }
+
+              console.log("Story submitted successfully. Story ID:", storyId);
+              res
+                .status(201)
+                .json({ message: "Story submitted successfully." });
+            }
+          );
+        }
+      );
+    } else {
+      return res.status(401).json({ error: "Unauthorized: Invalid user" });
+    }
+  });
+});
+
 // ADD STORY AND WORDS TO DATABASE END //
 
 // DELETE STORIES FROM DATABASE START //
