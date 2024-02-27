@@ -10,9 +10,9 @@ const secretKey =
   process.env.SECRET_KEY || "gV2$r9^uLpQw3ZtYxYzA#dG!kLmNp3s6v9y/B?E";
 
 const db = mysql2.createPool({
-  host: "localhost",
-  user: "root",
-  password: "01.God_is_Able",
+  host: "sql.freedb.tech",
+  user: "freedb_jhovan",
+  password: "d$?DbcebWzD9Adv",
   database: "thesis2_db",
 });
 
